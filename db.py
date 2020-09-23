@@ -1,3 +1,4 @@
+import io
 import sqlite3
 import os
 import datetime
@@ -19,17 +20,20 @@ import datetime
 #db_path = os.path.join(os.getcwd(),"sample.db")
 
 class DB():
-    def __init__(self, user_id, file_path=None,text=None, root_path=None):
+    def __init__(self, user_id, img=None,text=None, root_path=None):
         self.user_id = user_id
         self.plant_data = None
         self.db_path = os.path.join(root_path, "sample.db")
-        self.file_path = file_path
+        self.img = img
         self.text = text
         self.root_path = root_path
         self.conn = sqlite3.connect(self.db_path)
         self.c = self.conn.cursor()
 
     def treat_picture(self):
+        #with io.BytesIO() as output:
+        #    self.img.save(output, format="JPEG")
+        #    self.img_binary = output.getvalue()
         """
         画像を受けとったらテーブルを生成し､画像の保存先を入力
         """
@@ -40,11 +44,11 @@ class DB():
             user_id TEXT,
             status TEXT,
             name TEXT,
-            file_path TEXT,
+            image_bin BLOB,
             memo TEXT,
             localtime DATETIME
             )""")
-        self.c.execute('INSERT INTO items (user_id, status, name, file_path, memo, localtime) VALUES (?,?,?,?,?,?)', (self.user_id, "start", None, self.file_path, None, datetime.datetime.now()))
+        self.c.execute('INSERT INTO items (user_id, status, name, image_bin, memo, localtime) VALUES (?,?,?,?,?,?)', (self.user_id, "start", None, self.img, None, datetime.datetime.now()))
         self.conn.commit()
 
     def input_plant_data(self):
@@ -54,16 +58,16 @@ class DB():
         """
         if self.text == "キャンセル":
             self.delete_record()
-            return "キャンセルしたよ｡"
+            return (0, "キャンセルしたよ｡")
         status = self.check_status()
         if status == "start":
             self.update_record("name", self.text, "name")
-            return f"{self.text}で登録したよ｡\n何かメモがあれば入力してね\n｢キャンセル｣と入力で終了"
+            return (0, f"{self.text}で登録したよ｡\n何かメモがあれば入力してね\n｢キャンセル｣と入力で終了")
         elif status == "name":
             self.update_record("memo", self.text, "finished")
-            return "メモの登録が完了したよ"
+            return (0, "メモの登録が完了したよ")
         elif status == "finished":
-            return self.watch_image()
+            return (1, self.watch_image())
 
     def update_record(self, colmn, answer, status):
         """
@@ -90,11 +94,17 @@ class DB():
         return self.c.fetchall()[0][0]
 
     def watch_image(self):
-        sql_for_imagePath = f"select file_path from items where user_id = '{self.user_id}' and name = '{self.text}' order by id desc limit 1"
+        """
+        指定された画像をDBから持ってくる
+        """
+        sql_for_imagePath = f"select image_bin from items where user_id = '{self.user_id}' and name = '{self.text}' order by id desc limit 1"
         self.c.execute(sql_for_imagePath)
         result = self.c.fetchall()
         if result:
-            return result[0][0]
+            img_path = os.path.join(self.root_path, f"tmp/{self.user_id}.jpg")
+            with open(img_path, "wb") as img:
+                img.write(result[0][0])
+            return img_path
         else:
             return None
 

@@ -44,12 +44,9 @@ def hello_world():
 def handle_image_message(event):
     profile = line_bot_api.get_profile(event.source.user_id)
     message_content = line_bot_api.get_message_content(event.message.id)
-    file_name = event.message.id + ".jpg"
-    file_path = os.path.join(app.root_path, "static", file_name)
-    with open(file_path, "wb") as f:
-        f.write(message_content.content)
     user_id = profile.user_id
-    db = DB(user_id=user_id,file_path=file_path,root_path=app.root_path)
+    image_content = message_content.content
+    db = DB(user_id=user_id,img=image_content,root_path=app.root_path)
     db.treat_picture()
     reply_text = "画像の登録が完了したよ｡\n次に名前を入力してね｡\n｢キャンセル｣と入力で終了"
     line_bot_api.reply_message(event.reply_token,TextSendMessage(text=reply_text))
@@ -60,13 +57,14 @@ def handle_message(event):
     user_id = profile.user_id
     text = event.message.text
     db = DB(user_id=user_id, text=text, root_path=app.root_path)
-    reply_text = str(db.input_plant_data())
-    if reply_text:
-        if reply_text[-4::] == ".jpg":
-            #line_bot_api.reply_message(event.reply_token,TextSendMessage(text=reply_text))
-            line_bot_api.reply_message(event.reply_token,ImageSendMessage(original_content_url=reply_text,preview_image_url=reply_text))
+    reply_text = db.input_plant_data()
+    if reply_text[0] == 1:
+        if not reply_text[1]:
+            line_bot_api.reply_message(event.reply_token,TextSendMessage(text=reply_text[1]))
         else:
-            line_bot_api.reply_message(event.reply_token,TextSendMessage(text=reply_text))
+            line_bot_api.reply_message(event.reply_token,ImageSendMessage(original_content_url=reply_text,preview_image_url=reply_text))
+    elif reply_text[0] == 0:
+        line_bot_api.reply_message(event.reply_token,TextSendMessage(text=reply_text[1]))
     else:
         line_bot_api.reply_message(event.reply_token,TextSendMessage(text="画像を投稿してね｡"))
 
