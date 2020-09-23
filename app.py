@@ -62,7 +62,7 @@ def handle_message(event):
         if not reply_text[1]:
             line_bot_api.reply_message(event.reply_token,TextSendMessage(text=reply_text[1]))
         else:
-            line_bot_api.reply_message(event.reply_token,ImageSendMessage(original_content_url=reply_text,preview_image_url=reply_text))
+            line_bot_api.reply_message(event.reply_token,ImageSendMessage(original_content_url=reply_text[1],preview_image_url=reply_text[1]))
     elif reply_text[0] == 0:
         line_bot_api.reply_message(event.reply_token,TextSendMessage(text=reply_text[1]))
     else:
