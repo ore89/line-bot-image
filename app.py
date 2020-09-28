@@ -60,7 +60,7 @@ def handle_message(event):
     reply_text = db.input_plant_data()
     if reply_text[0] == 1:
         if not reply_text[1]:
-            line_bot_api.reply_message(event.reply_token,TextSendMessage(text=reply_text[1]))
+            line_bot_api.reply_message(event.reply_token,TextSendMessage(text="そんな画像は見つからないよ"))
         else:
             line_bot_api.reply_message(event.reply_token,ImageSendMessage(original_content_url=reply_text[1],preview_image_url=reply_text[1]))
     elif reply_text[0] == 0:
